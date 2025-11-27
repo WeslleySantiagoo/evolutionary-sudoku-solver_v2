@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class PreProcessing(object):
 
     def __init__(self, sudoku):
@@ -24,7 +25,9 @@ class PreProcessing(object):
         used_numbers = set(self.sudoku[row, :]) | set(self.sudoku[:, col])
         grid_row = (row // 3) * 3
         grid_col = (col // 3) * 3
-        used_numbers |= set(self.sudoku[grid_row:grid_row+3, grid_col:grid_col+3].flatten())
+        used_numbers |= set(self.sudoku[
+            grid_row:grid_row + 3, grid_col:grid_col + 3
+        ].flatten())
         candidates = all_numbers - used_numbers
         return candidates
 
@@ -47,7 +50,10 @@ class PreProcessing(object):
         for group_type, group_indice in [
             ("row", [(row, i) for i in range(9)]),
             ("col", [(i, col) for i in range(9)]),
-            ("subgrid", [(row // 3 * 3 + r, col // 3 * 3 + c) for r in range(3) for c in range(3)])
+            ("subgrid", [
+                (row // 3 * 3 + r, col // 3 * 3 + c)
+                for r in range(3) for c in range(3)
+            ])
         ]:
             pairs = {}
             for r, c in group_indice:
@@ -63,14 +69,22 @@ class PreProcessing(object):
                     r1, c1 = cells[0]
                     r2, c2 = cells[1]
                     is_naked_pair = True
-                    if [(r1,c1), (r2,c2)] not in self.checked_naked_pairs:
+                    if [(r1, c1), (r2, c2)] not in self.checked_naked_pairs:
                         for r, c in group_indice:
-                            if (r, c) not in cells and len(self.candidates_matrix[r, c]) == 2:
-                                if all(candidate in self.candidates_matrix[r, c] for candidate in candidates_tuple):
+                            not_in_cells = (r, c) not in cells
+                            has_two_candidates = (
+                                len(self.candidates_matrix[r, c]) == 2
+                            )
+                            if not_in_cells and has_two_candidates:
+                                if all(candidate in
+                                       self.candidates_matrix[r, c]
+                                       for candidate in candidates_tuple):
                                     is_naked_pair = False
                                     break
                         if is_naked_pair:
-                            self.checked_naked_pairs.append([(r1,c1), (r2,c2)])
+                            self.checked_naked_pairs.append(
+                                [(r1, c1), (r2, c2)]
+                            )
                             for r, c in group_indice:
                                 if (r, c) not in cells and self.candidates_matrix[r, c]:
                                     self.candidates_matrix[r, c] -= set(candidates_tuple)
@@ -89,8 +103,11 @@ class PreProcessing(object):
                     group_indice = [(i, index) for i in range(9)]
                 elif group_type == "subgrid":
                     row_start, col_start = (index // 3) * 3, (index % 3) * 3
-                    group_indice = [(row_start + r, col_start + c) for r in range(3) for c in range(3)]
-                
+                    group_indice = [
+                        (row_start + r, col_start + c)
+                        for r in range(3) for c in range(3)
+                    ]
+
                 for candidate in range(1, 10):
                     count = 0
                     last_position = None
@@ -117,7 +134,9 @@ class PreProcessing(object):
         for number in range(1, 10):
             row_pairs = {}
             for r in range(9):
-                cols_with_num = [c for c in range(9) if self.sudoku[r, c] == 0 and number in self.candidates_matrix[r, c]]
+                cols_with_num = [c for c in range(9)
+                                 if (self.sudoku[r, c] == 0 and number in
+                                     self.candidates_matrix[r, c])]
                 if len(cols_with_num) == 2:
                     cols_tuple = tuple(cols_with_num)
                     if cols_tuple not in row_pairs:
@@ -130,47 +149,73 @@ class PreProcessing(object):
                     row1, row2 = rows
                     for r_idx in range(9):
                         if r_idx not in rows:
-                            if self.sudoku[r_idx, col1] == 0 and number in self.candidates_matrix[r_idx, col1]:
-                                self.candidates_matrix[r_idx, col1].remove(number)
+                            cell_empty_col1 = self.sudoku[r_idx, col1] == 0
+                            has_num_col1 = (
+                                number in self.candidates_matrix[r_idx, col1]
+                            )
+                            if cell_empty_col1 and has_num_col1:
+                                self.candidates_matrix[r_idx, col1].remove(
+                                    number
+                                )
                                 updated_in_x_wing = True
-                            if self.sudoku[r_idx, col2] == 0 and number in self.candidates_matrix[r_idx, col2]:
-                                self.candidates_matrix[r_idx, col2].remove(number)
+                            cell_empty_col2 = self.sudoku[r_idx, col2] == 0
+                            has_num_col2 = (
+                                number in self.candidates_matrix[r_idx, col2]
+                            )
+                            if cell_empty_col2 and has_num_col2:
+                                self.candidates_matrix[r_idx, col2].remove(
+                                    number
+                                )
                                 updated_in_x_wing = True
 
         for number in range(1, 10):
             col_pairs = {}
             for c in range(9):
-                rows_with_num = [r for r in range(9) if self.sudoku[r, c] == 0 and number in self.candidates_matrix[r, c]]
+                rows_with_num = [r for r in range(9)
+                                 if (self.sudoku[r, c] == 0 and number in
+                                     self.candidates_matrix[r, c])]
                 if len(rows_with_num) == 2:
                     rows_tuple = tuple(rows_with_num)
                     if rows_tuple not in col_pairs:
                         col_pairs[rows_tuple] = []
                     col_pairs[rows_tuple].append(c)
-        
+
             for rows, cols in col_pairs.items():
                 if len(cols) == 2:
                     row1, row2 = rows
                     col1, col2 = cols
                     for c_idx in range(9):
                         if c_idx not in cols:
-                            if self.sudoku[row1, c_idx] == 0 and number in self.candidates_matrix[row1, c_idx]:
-                                self.candidates_matrix[row1, c_idx].remove(number)
+                            cell_empty_row1 = self.sudoku[row1, c_idx] == 0
+                            has_num_row1 = (
+                                number in self.candidates_matrix[row1, c_idx]
+                            )
+                            if cell_empty_row1 and has_num_row1:
+                                self.candidates_matrix[row1, c_idx].remove(
+                                    number
+                                )
                                 updated_in_x_wing = True
-                            if self.sudoku[row2, c_idx] == 0 and number in self.candidates_matrix[row2, c_idx]:
-                                self.candidates_matrix[row2, c_idx].remove(number)
+                            cell_empty_row2 = self.sudoku[row2, c_idx] == 0
+                            has_num_row2 = (
+                                number in self.candidates_matrix[row2, c_idx]
+                            )
+                            if cell_empty_row2 and has_num_row2:
+                                self.candidates_matrix[row2, c_idx].remove(
+                                    number
+                                )
                                 updated_in_x_wing = True
 
         return updated_in_x_wing
 
     def update_candidates(self, row, col):
 
-        placed_number = self.sudoku[row,col]
+        placed_number = self.sudoku[row, col]
 
-        for c in range (9):
+        for c in range(9):
             if placed_number in self.candidates_matrix[row, c]:
                 self.candidates_matrix[row, c].remove(placed_number)
 
-        for r in range (9):
+        for r in range(9):
             if placed_number in self.candidates_matrix[r, col]:
                 self.candidates_matrix[r, col].remove(placed_number)
 
@@ -192,13 +237,14 @@ class PreProcessing(object):
                     if self.sudoku[row, col] == 0:
                         if self.analyze_cell(row, col):
                             updated = True
-            
+
             if self.search_x_wing():
                 updated = True
 
         final_zeros = np.count_nonzero(self.sudoku == 0)
         numbers_filled_by_pp = initial_zeros - final_zeros
         return self.sudoku, numbers_filled_by_pp
+
 
 class Controller(object):
 

@@ -1,5 +1,5 @@
 from gui import frame as sg
-from tkinter import *
+from tkinter import Tk
 import sys
 import os
 

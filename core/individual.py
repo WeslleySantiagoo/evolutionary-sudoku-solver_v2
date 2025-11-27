@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Candidate(object):
 
     def __init__(self):
@@ -14,15 +15,23 @@ class Candidate(object):
 
         for j in range(0, 9):
             column_values_for_count = self.values[:, j]
-            unique_elements_col, counts_in_col = np.unique(column_values_for_count[column_values_for_count != 0], return_counts=True)
+            unique_elements_col, counts_in_col = np.unique(
+                column_values_for_count[column_values_for_count != 0],
+                return_counts=True
+            )
             column_sum += np.sum(counts_in_col == 1)
 
         column_sum = column_sum / 81
 
         for r_offset in range(0, 9, 3):
             for c_offset in range(0, 9, 3):
-                block_values_for_count = self.values[r_offset:r_offset+3, c_offset:c_offset+3].flatten()
-                unique_elements_block, counts_in_block = np.unique(block_values_for_count[block_values_for_count != 0], return_counts=True)
+                block_values_for_count = self.values[
+                    r_offset:r_offset + 3, c_offset:c_offset + 3
+                ].flatten()
+                unique_elements_block, counts_in_block = np.unique(
+                    block_values_for_count[block_values_for_count != 0],
+                    return_counts=True
+                )
                 block_sum += np.sum(counts_in_block == 1)
 
         block_sum = block_sum / (9 * 9)
@@ -39,7 +48,7 @@ class Candidate(object):
         for r_idx in range(9):
             val = self.values[r_idx, col_idx]
             if 0 <= val <= 9:
-                 counts[val] += 1
+                counts[val] += 1
         return counts
 
     def _get_block_counts(self, block_r_start, block_c_start):
@@ -50,6 +59,7 @@ class Candidate(object):
                 if 0 <= val <= 9:
                     counts[val] += 1
         return counts
+
 
 class Fixed(Candidate):
     def __init__(self, values):
@@ -94,6 +104,7 @@ class Fixed(Candidate):
                     block_col_start = (c_idx // 3) * 3
                     for r_b_offset in range(block_row_start, block_row_start + 3):
                         for c_b_offset in range(block_col_start, block_col_start + 3):
-                            if (r_b_offset != r_idx or c_b_offset != c_idx) and self.values[r_b_offset][c_b_offset] == val:
+                            if ((r_b_offset != r_idx or c_b_offset != c_idx) and (
+                                    self.values[r_b_offset][c_b_offset] == val)):
                                 return False
         return True

@@ -1,0 +1,25 @@
+[flake8]
+# Aumentar o limite de caracteres por linha
+max-line-length = 150
+
+# Ignorar alguns erros específicos se necessário
+# E501: linha muito longa
+# W503: quebra de linha antes de operador binário
+# E203: espaço antes de ':'
+ignore = W503, E203
+
+# Excluir diretórios
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    build,
+    dist,
+    *.egg-info,
+    frame.py
+
+# Estatísticas
+statistics = True
+count = True

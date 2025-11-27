@@ -2,6 +2,7 @@ import numpy as np
 import random
 from .individual import Candidate
 
+
 class Tournament(object):
     def __init__(self):
         self.tournament_size = 2
@@ -22,16 +23,23 @@ class Tournament(object):
 
         best_participant = tournament_participants[0]
 
-        best_fitness = best_participant.fitness if best_participant.fitness is not None else -float('inf')
+        if best_participant.fitness is not None:
+            best_fitness = best_participant.fitness
+        else:
+            best_fitness = - float('inf')
 
         for i in range(1, len(tournament_participants)):
             participant = tournament_participants[i]
-            participant_fitness = participant.fitness if participant.fitness is not None else -float('inf')
+            if participant.fitness is not None:
+                participant_fitness = participant.fitness
+            else:
+                participant_fitness = - float('inf')
             if participant_fitness > best_fitness:
                 best_fitness = participant_fitness
                 best_participant = participant
 
         return best_participant
+
 
 class CXCrossover(object):
     def __init__(self):
@@ -45,12 +53,12 @@ class CXCrossover(object):
             if parent1 is not None:
                 child1.values = np.copy(parent1.values)
             else:
-                child1.values = np.zeros((9,9))
+                child1.values = np.zeros((9, 9))
 
             if parent2 is not None:
                 child2.values = np.copy(parent2.values)
             else:
-                child2.values = np.zeros((9,9))
+                child2.values = np.zeros((9, 9))
 
             if parent1:
                 child1.update_fitness()
@@ -76,21 +84,20 @@ class CXCrossover(object):
         n = len(row1_parent)
         child_row1 = np.zeros(n, dtype=int)
         child_row2 = np.zeros(n, dtype=int)
-        
+
         cycles = []
         visited = [False] * n
 
         for i in range(n):
             if not visited[i]:
                 cycle = []
-                start_index = i
                 current_index = i
-                
+
                 while not visited[current_index]:
                     cycle.append(current_index)
                     visited[current_index] = True
                     val_in_p1 = row1_parent[current_index]
-                    
+
                     if val_in_p1 in row2_parent:
                         current_index = list(row2_parent).index(val_in_p1)
                     else:
@@ -109,14 +116,15 @@ class CXCrossover(object):
 
         return child_row1, child_row2
 
+
 def mutate(candidate, mutation_rate, given):
-    r = random.uniform(0, 1.1)
+    random.uniform(0, 1.1)
 
     success = False
     if random.random() < mutation_rate:
         attempts = 0
         while not success and attempts < 50:
-            attempts +=1
+            attempts += 1
             row1 = random.randint(0, 8)
 
             mutable_columns = [col for col in range(9) if given.values[row1][col] == 0]

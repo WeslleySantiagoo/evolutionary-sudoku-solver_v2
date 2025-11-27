@@ -2,12 +2,23 @@ import numpy as np
 import random
 import operator
 
-from .config import *
+from .config import (
+    POPULATION_SIZE,
+    ELITE_PERCENTAGE,
+    MAX_GENERATIONS,
+    INITIAL_MUTATION_RATE,
+    MIN_MUTATION_RATE,
+    MAX_MUTATION_RATE,
+    MEDIAN_FITNESS_UPPER_BOUND_RATIO,
+    MEDIAN_FITNESS_LOWER_BOUND_RATIO,
+    MUTATION_RATE_ADJUSTMENT_STEP
+)
 from .individual import Candidate, Fixed
 from .population import Population
 from .genetic_operators import Tournament, CXCrossover, mutate
 
 random.seed()
+
 
 class Sudoku(object):
 
@@ -23,7 +34,7 @@ class Sudoku(object):
         population_size_used = POPULATION_SIZE
         quant_elite_used = int(ELITE_PERCENTAGE * population_size_used)
         if quant_elite_used % 2 != 0 and (population_size_used - quant_elite_used) > 0:
-            quant_elite_used = max(0, quant_elite_used -1)
+            quant_elite_used = max(0, quant_elite_used - 1)
 
         num_generations_to_run = MAX_GENERATIONS
         mutation_rate = INITIAL_MUTATION_RATE
@@ -35,7 +46,8 @@ class Sudoku(object):
             'solution_candidate': None,
         }
 
-        if self.given is None or self.given.values is None or self.given.no_duplicates() == False:
+        no_given = self.given is None or self.given.values is None
+        if no_given or not self.given.no_duplicates():
             return default_return_metrics
 
         self.population = Population()
@@ -45,37 +57,56 @@ class Sudoku(object):
 
         for generation_num in range(0, num_generations_to_run):
             self.population.update_fitness()
-            all_fitness_values = [c.fitness for c in self.population.candidates if c.fitness is not None]
+            all_fitness_values = [
+                c.fitness for c in self.population.candidates
+                if c.fitness is not None
+            ]
 
             solution_found_candidate = None
-            max_fitness= 0.0
+            max_fitness = 0.0
 
             if all_fitness_values:
                 max_fitness = np.max(all_fitness_values)
                 if abs(max_fitness - 1.0) < 1e-9:
                     for idx, c_sol in enumerate(self.population.candidates):
-                        if c_sol.fitness is not None and abs(c_sol.fitness - 1.0) < 1e-9 :
-                            if not np.any(c_sol.values == 0) and Fixed(c_sol.values).no_duplicates():
+                        has_fitness = c_sol.fitness is not None
+                        fitness_is_one = (abs(c_sol.fitness - 1.0) < 1e-9
+                                          if has_fitness else False)
+                        fitness_ok = has_fitness and fitness_is_one
+                        if fitness_ok:
+                            no_zeros = not np.any(c_sol.values == 0)
+                            valid = Fixed(c_sol.values).no_duplicates()
+                            if no_zeros and valid:
                                 solution_found_candidate = c_sol
                                 solution_index = idx
                                 break
 
-
             if progress_callback:
                 self.population.sort()
-                best_candidate_current_gen = self.population.candidates[0] if self.population.candidates else None
-                total_individuals_current = (generation_num + 1) * population_size_used
-                progress_callback(generation_num, best_candidate_current_gen, total_individuals_current, max_fitness)
+                best_candidate_current_gen = (
+                    self.population.candidates[0]
+                    if self.population.candidates else None
+                )
+                total_individuals_current = (
+                    (generation_num + 1) * population_size_used
+                )
+                progress_callback(
+                    generation_num,
+                    best_candidate_current_gen,
+                    total_individuals_current,
+                    max_fitness
+                )
 
             if solution_found_candidate:
-                return {'generation': generation_num,
-                        'solution_candidate': solution_found_candidate
-                        }
+                return {
+                    'generation': generation_num,
+                    'solution_candidate': solution_found_candidate
+                }
 
             self.population.sort()
 
             tourney_selector = Tournament()
-            
+
             pmx_crossover_op = CXCrossover()
             offspring_population = []
 
@@ -122,9 +153,11 @@ class Sudoku(object):
             next_population_candidates.extend(combined_population[:num_elites])
 
             tournament_pool = combined_population[num_elites:]
-            
-            num_to_select_from_tournament = population_size_used - len(next_population_candidates)
-            
+
+            num_to_select_from_tournament = (
+                population_size_used - len(next_population_candidates)
+            )
+
             for _ in range(num_to_select_from_tournament):
                 if len(tournament_pool) < 2:
                     if tournament_pool:
@@ -132,15 +165,20 @@ class Sudoku(object):
                     break
 
                 participant1, participant2 = random.sample(tournament_pool, 2)
-                
-                winner = participant1 if participant1.fitness >= participant2.fitness else participant2
-                
+
+                winner = (
+                    participant1
+                    if participant1.fitness >= participant2.fitness
+                    else participant2
+                )
+
                 next_population_candidates.append(winner)
                 tournament_pool.remove(winner)
-            
+
             idx_filler = 0
             while len(next_population_candidates) < population_size_used:
-                if not combined_population: break
+                if not combined_population:
+                    break
                 filler_candidate = Candidate()
                 source_candidate = combined_population[idx_filler % len(combined_population)]
                 if source_candidate.values is not None:
@@ -148,20 +186,19 @@ class Sudoku(object):
                     filler_candidate.update_fitness()
                     next_population_candidates.append(filler_candidate)
                 idx_filler += 1
-                if idx_filler > 2 * population_size_used: break
+                if idx_filler > 2 * population_size_used:
+                    break
 
             if not next_population_candidates:
                 if self.population.seed(population_size_used, self.given) != 1:
                     default_return_metrics.update({
-                        'generation': -2, 
+                        'generation': -2,
                         'final_mutation_rate': mutation_rate,
                         'solution_index': -1
-                        })
+                    })
                     return default_return_metrics
             else:
-                 self.population.candidates = next_population_candidates
-
-            
+                self.population.candidates = next_population_candidates
 
             if 'max_fitness' in locals() and max_fitness > 0:
 
@@ -173,26 +210,40 @@ class Sudoku(object):
 
                 amplitude_reduction = 1.0 - max_fitness
 
-                upper_bound = max_fitness * (1.0 - (1.0 - MEDIAN_FITNESS_UPPER_BOUND_RATIO) * amplitude_reduction)
-                lower_bound = max_fitness * (1.0 - (1.0 - MEDIAN_FITNESS_LOWER_BOUND_RATIO) * amplitude_reduction)
+                upper_term = (1.0 - MEDIAN_FITNESS_UPPER_BOUND_RATIO)
+                upper_factor = 1.0 - upper_term * amplitude_reduction
+                upper_bound = max_fitness * upper_factor
+                lower_term = (1.0 - MEDIAN_FITNESS_LOWER_BOUND_RATIO)
+                lower_factor = 1.0 - lower_term * amplitude_reduction
+                lower_bound = max_fitness * lower_factor
 
                 if median_fitness > upper_bound:
                     mutation_rate += MUTATION_RATE_ADJUSTMENT_STEP
                 elif median_fitness < lower_bound:
                     mutation_rate -= MUTATION_RATE_ADJUSTMENT_STEP
-                
-                mutation_rate = max(MIN_MUTATION_RATE, min(mutation_rate, MAX_MUTATION_RATE))
+
+                mutation_rate = max(
+                    MIN_MUTATION_RATE,
+                    min(mutation_rate, MAX_MUTATION_RATE)
+                )
 
         best_candidate_at_end = None
 
         if self.population.candidates:
             self.population.sort()
             best_candidate_at_end = self.population.candidates[0]
-            if best_candidate_at_end and hasattr(best_candidate_at_end, 'values') and best_candidate_at_end.values is not None:
-                if not (abs(best_candidate_at_end.fitness - 1.0) < 1e-9 and \
-                        not np.any(best_candidate_at_end.values == 0) and \
-                        Fixed(best_candidate_at_end.values).no_duplicates()):
-                     pass
+            has_candidate = best_candidate_at_end is not None
+            has_values_attr = hasattr(best_candidate_at_end, 'values')
+            values_not_none = (
+                best_candidate_at_end.values is not None
+                if has_candidate else False
+            )
+            if has_candidate and has_values_attr and values_not_none:
+                fitness_one = abs(best_candidate_at_end.fitness - 1.0) < 1e-9
+                no_zeros = not np.any(best_candidate_at_end.values == 0)
+                valid = Fixed(best_candidate_at_end.values).no_duplicates()
+                if not (fitness_one and no_zeros and valid):
+                    pass
             else:
                 best_candidate_at_end = None
 
