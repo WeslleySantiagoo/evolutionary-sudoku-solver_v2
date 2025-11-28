@@ -10,13 +10,11 @@ import os
 
 from core import solver as ga
 from core import pre_processing as pp
-
-
-random.seed(time.time())
+from gui import frame_config
 
 class SudokuGUI(Frame):
 
-    def __init__(self, master, file):
+    def __init__(self, master):
 
         Frame.__init__(self, master)
         if master:
@@ -30,17 +28,35 @@ class SudokuGUI(Frame):
         self.update_queue = queue.Queue()
         self.solver_thread = None
         self.is_solution_complete = False
+        self.current_puzzle_path = None
+        self.cancel_execution = False
 
-        self.load_sudoku(file)
+        # Carregar lista de puzzles disponíveis
+        self.puzzles_dir = "puzzles/mantere_collection"
+        self.available_puzzles = self._get_available_puzzles()
 
         self.main_frame = Frame(self)
         self.title_label = Label(self.main_frame, text="SOLUCIONADOR DE SUDOKU", font=("Arial", 24, "bold")).pack()
         
         self.spacer1 = Label(self.main_frame,text="", padding=4).pack()
-        puzzle_filename = os.path.basename(file)
-        puzzle_name, _ = os.path.splitext(puzzle_filename)
-        self.puzzle_name_label = Label(self.main_frame, text="PUZZLE", font=("Arial", 12, "underline")).pack()
-        self.puzzle_name_label = Label(self.main_frame, text=f"{puzzle_name}", font=("Arial", 10)).pack()
+        
+        # Frame para seleção de puzzle
+        self.selection_frame = Frame(self.main_frame)
+        Label(self.selection_frame, text="Selecione o Puzzle:", font=("Arial", 12)).pack(side=LEFT, padx=5)
+        self.puzzle_var = StringVar()
+        self.puzzle_combobox = Combobox(self.selection_frame, textvariable=self.puzzle_var, 
+                                        values=self.available_puzzles, state="readonly", width=20)
+        if self.available_puzzles:
+            self.puzzle_combobox.current(0)
+        self.puzzle_combobox.pack(side=LEFT, padx=5)
+        self.puzzle_combobox.bind("<<ComboboxSelected>>", self._on_puzzle_selected)
+        self.load_button = Button(self.selection_frame, text="Carregar", command=self._load_selected_puzzle)
+        self.load_button.pack(side=LEFT, padx=5)
+        self.selection_frame.pack()
+        
+        self.spacer_puzzle = Label(self.main_frame,text="", padding=4).pack()
+        self.current_puzzle_label = Label(self.main_frame, text="Nenhum puzzle carregado", font=("Arial", 10, "italic"))
+        self.current_puzzle_label.pack()
 
         self.spacer1 = Label(self.main_frame,text="", padding=4).pack()
         
@@ -67,7 +83,6 @@ class SudokuGUI(Frame):
         self.label_frame.pack()
 
         self.make_grid()
-        self.show_puzzle()
         
         self.spacer2 = Label(self.main_frame,text="", padding=4).pack()
         
@@ -90,20 +105,78 @@ class SudokuGUI(Frame):
         self.button_solve_wo_pp = Button(self.main_frame, text='RESOLVER SEM PRÉ-PROCESSAMENTO', width=40, command=self.start_solver_wo_pp)
         self.button_solve_wo_pp.pack()
 
+
+        self.button_cancel = Button(self.main_frame, text='CANCELAR EXECUÇÃO', width=40, command=self.cancel_solver)
+        self.button_cancel.pack()
+        self.button_cancel.config(state=DISABLED)
+
         self.spacer3 = Label(self.main_frame,text="", padding=4).pack()
 
         self.status_label = Label(self.main_frame, text="", relief="solid", justify=LEFT)
         self.status_label.pack()
+
+        # Frame para o botão de configuração no canto inferior direito
+        self.config_button_frame = Frame(self.main_frame)
+        self.config_button_frame.pack(fill=X, pady=(10, 0))
+        
+        # Botão de configuração (engrenagem) no canto inferior direito
+        self.config_button = Button(self.config_button_frame, text="⚙", width=3, 
+                                    command=self._open_config_window)
+        self.config_button.pack(side=RIGHT, padx=5)
 
         self.main_frame.pack()
         self.pack()
 
         self.after(100, self.check_queue_for_updates)
 
-    def load_sudoku (self, file):
+    def _get_available_puzzles(self):
+        """Retorna lista de puzzles disponíveis no diretório."""
+        try:
+            files = os.listdir(self.puzzles_dir)
+            puzzles = [f.replace('.txt', '') for f in files if f.endswith('.txt')]
+            return sorted(puzzles)
+        except Exception:
+            return []
+
+    def _on_puzzle_selected(self, event):
+        """Callback quando um puzzle é selecionado no combobox."""
+        pass
+
+    def _open_config_window(self):
+        """Abre a janela de configurações."""
+        frame_config.ConfigWindow(self.master)
+
+    def cancel_solver(self):
+        """Cancela a execução do solver."""
+        self.cancel_execution = True
+        self.status_label.config(text="Cancelando execução...")
+
+    def _load_selected_puzzle(self):
+        """Carrega o puzzle selecionado no combobox."""
+        selected = self.puzzle_var.get()
+        if selected:
+            puzzle_path = os.path.join(self.puzzles_dir, f"{selected}.txt")
+            try:
+                self.load_sudoku(puzzle_path)
+                self.current_puzzle_path = puzzle_path
+                self.current_puzzle_label.config(text=f"Puzzle carregado: {selected}")
+                self.show_puzzle()
+                self.update_canvas_2(np.zeros((9,9)))
+                self.update_canvas_3(np.zeros((9,9)))
+                self.is_solution_complete = False
+                self.status_label.config(text="")
+                self.generation_label.config(text="Geração Atual: N/A")
+                self.total_generation_label.config(text="Total de Gerações: N/A")
+                self.individuals_label.config(text="Indivíduos Gerados: N/A")
+                self.best_fitness_label.config(text="Melhor Aptidão: N/A")
+                self.elapsed_time_label.config(text="Tempo Decorrido: 0.00s")
+            except Exception as e:
+                self.current_puzzle_label.config(text=f"Erro ao carregar: {str(e)}")
+
+    def load_sudoku(self, file):
         with open(file, "r") as input_file:
-                file_content = input_file.read()
-                self.puzzle = file_content.replace(' ', '').replace('-', '0').replace('\n', '')
+            file_content = input_file.read()
+            self.puzzle = file_content.replace(' ', '').replace('-', '0').replace('\n', '')
 
     def show_puzzle(self):
         self.original_sudoku_problem = np.array(list(self.puzzle)).reshape((9,9)).astype(int)
@@ -118,6 +191,10 @@ class SudokuGUI(Frame):
 
 
     def _update_ga_progress_callback(self, generation_num, best_candidate, total_individuals, best_fitness, start_time):
+        # Verificar se o cancelamento foi solicitado
+        if self.cancel_execution:
+            return False
+            
         self.update_queue.put({
             'type': 'ga_progress',
             'generation_num': generation_num,
@@ -127,6 +204,7 @@ class SudokuGUI(Frame):
         })
         elapsed = time.time() - start_time
         self.update_queue.put({'type': 'time_update', 'elapsed_time': elapsed})
+        return True
         
     def check_queue_for_updates(self):
         try:
@@ -140,6 +218,9 @@ class SudokuGUI(Frame):
                 elif update_type == 'enable_buttons':
                     self.button_solve_w_pp.config(state=NORMAL)
                     self.button_solve_wo_pp.config(state=NORMAL)
+                    self.load_button.config(state=NORMAL)
+                    self.config_button.config(state=NORMAL)
+                    self.button_cancel.config(state=DISABLED)
                 elif update_type == 'final_board':
                     self.update_canvas_3(update_data['final_board'])
                 elif update_type == 'ga_progress':
@@ -168,6 +249,10 @@ class SudokuGUI(Frame):
 
 
     def start_solver_w_pp(self):
+        if self.current_puzzle_path is None:
+            self.status_label.config(text="Por favor, carregue um puzzle primeiro!")
+            return
+        
         self.sudoku_problem = np.copy(self.original_sudoku_problem)
         self.update_canvas_1()
 
@@ -187,6 +272,10 @@ class SudokuGUI(Frame):
 
 
     def start_solver_wo_pp(self):
+        if self.current_puzzle_path is None:
+            self.status_label.config(text="Por favor, carregue um puzzle primeiro!")
+            return
+        
         self.sudoku_problem = np.copy(self.original_sudoku_problem)
         self.update_canvas_1()
         self.update_canvas_2(np.zeros((9,9)))
@@ -195,6 +284,10 @@ class SudokuGUI(Frame):
     def start_solver(self, use_preprocessing_result):
         self.button_solve_w_pp.config(state=DISABLED)
         self.button_solve_wo_pp.config(state=DISABLED)
+        self.load_button.config(state=DISABLED)
+        self.config_button.config(state=DISABLED)
+        self.button_cancel.config(state=NORMAL)
+        self.cancel_execution = False
 
         self.status_label.config(text="")
         self.generation_label.config(text="Geração Atual: N/A")
@@ -234,6 +327,8 @@ class SudokuGUI(Frame):
 
         if generation == -1:
             str_print = "ENTRADA INVÁLIDA"
+        elif generation == -3:
+            str_print = "EXECUÇÃO CANCELADA PELO USUÁRIO"
         elif generation == -2:
             str_print = "SOLUÇÃO NÃO ENCONTRADA - LIMITE DE GERAÇÕES ATINGIDO"
         elif solution_candidate and hasattr(solution_candidate, 'values') and abs(solution_candidate.fitness - 1.0) < 1e-9 and not np.any(solution_candidate.values == 0):

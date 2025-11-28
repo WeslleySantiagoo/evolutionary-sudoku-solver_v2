@@ -2,22 +2,10 @@ import numpy as np
 import random
 import operator
 
-from .config import (
-    POPULATION_SIZE,
-    ELITE_PERCENTAGE,
-    MAX_GENERATIONS,
-    INITIAL_MUTATION_RATE,
-    MIN_MUTATION_RATE,
-    MAX_MUTATION_RATE,
-    MEDIAN_FITNESS_UPPER_BOUND_RATIO,
-    MEDIAN_FITNESS_LOWER_BOUND_RATIO,
-    MUTATION_RATE_ADJUSTMENT_STEP
-)
+from . import config
 from .individual import Candidate, Fixed
 from .population import Population
 from .genetic_operators import Tournament, CXCrossover, mutate
-
-random.seed()
 
 
 class Sudoku(object):
@@ -31,13 +19,13 @@ class Sudoku(object):
         return
 
     def solve(self, progress_callback=None):
-        population_size_used = POPULATION_SIZE
-        quant_elite_used = int(ELITE_PERCENTAGE * population_size_used)
+        population_size_used = config.POPULATION_SIZE
+        quant_elite_used = int(config.ELITE_PERCENTAGE * population_size_used)
         if quant_elite_used % 2 != 0 and (population_size_used - quant_elite_used) > 0:
             quant_elite_used = max(0, quant_elite_used - 1)
 
-        num_generations_to_run = MAX_GENERATIONS
-        mutation_rate = INITIAL_MUTATION_RATE
+        num_generations_to_run = config.MAX_GENERATIONS
+        mutation_rate = config.INITIAL_MUTATION_RATE
 
         reseed_count = 0
 
@@ -90,12 +78,19 @@ class Sudoku(object):
                 total_individuals_current = (
                     (generation_num + 1) * population_size_used
                 )
-                progress_callback(
+                should_continue = progress_callback(
                     generation_num,
                     best_candidate_current_gen,
                     total_individuals_current,
                     max_fitness
                 )
+
+                # Se o callback retornar False, cancelar a execução
+                if should_continue is False:
+                    return {
+                        'generation': -3,
+                        'solution_candidate': best_candidate_current_gen
+                    }
 
             if solution_found_candidate:
                 return {
@@ -210,21 +205,21 @@ class Sudoku(object):
 
                 amplitude_reduction = 1.0 - max_fitness
 
-                upper_term = (1.0 - MEDIAN_FITNESS_UPPER_BOUND_RATIO)
+                upper_term = (1.0 - config.MEDIAN_FITNESS_UPPER_BOUND_RATIO)
                 upper_factor = 1.0 - upper_term * amplitude_reduction
                 upper_bound = max_fitness * upper_factor
-                lower_term = (1.0 - MEDIAN_FITNESS_LOWER_BOUND_RATIO)
+                lower_term = (1.0 - config.MEDIAN_FITNESS_LOWER_BOUND_RATIO)
                 lower_factor = 1.0 - lower_term * amplitude_reduction
                 lower_bound = max_fitness * lower_factor
 
                 if median_fitness > upper_bound:
-                    mutation_rate += MUTATION_RATE_ADJUSTMENT_STEP
+                    mutation_rate += config.MUTATION_RATE_ADJUSTMENT_STEP
                 elif median_fitness < lower_bound:
-                    mutation_rate -= MUTATION_RATE_ADJUSTMENT_STEP
+                    mutation_rate -= config.MUTATION_RATE_ADJUSTMENT_STEP
 
                 mutation_rate = max(
-                    MIN_MUTATION_RATE,
-                    min(mutation_rate, MAX_MUTATION_RATE)
+                    config.MIN_MUTATION_RATE,
+                    min(mutation_rate, config.MAX_MUTATION_RATE)
                 )
 
         best_candidate_at_end = None
