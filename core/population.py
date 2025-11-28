@@ -12,6 +12,51 @@ class Population(object):
 
     def seed(self, population, given):
         self.candidates = []
+
+        # Verificar se o sudoku está completamente preenchido (pós pré-processamento)
+        is_fully_filled = not np.any(given.values == 0)
+
+        if is_fully_filled:
+            # Sudoku completamente preenchido - apenas embaralhar células não fixas
+            return self._seed_from_filled(population, given)
+        else:
+            # Sudoku com células vazias - método original
+            return self._seed_from_partial(population, given)
+
+    def _seed_from_filled(self, population, given):
+        """Cria população inicial a partir de um sudoku completamente preenchido."""
+        # Identificar células fixas (do puzzle original antes do pré-processamento)
+        # As células fixas são aquelas que já tinham valor no puzzle original
+
+        for p in range(population):
+            candidate = Candidate()
+            candidate.values = np.copy(given.values)
+
+            # Para cada linha, embaralhar apenas as células não fixas
+            for row in range(9):
+                # Identificar posições não fixas nesta linha
+                non_fixed_positions = []
+                non_fixed_values = []
+
+                for col in range(9):
+                    # Se a célula era originalmente zero (não fixa), pode ser movida
+                    if not given.is_fixed(row, col):
+                        non_fixed_positions.append(col)
+                        non_fixed_values.append(candidate.values[row, col])
+
+                # Embaralhar os valores das posições não fixas
+                if len(non_fixed_values) > 1:
+                    random.shuffle(non_fixed_values)
+                    for i, col in enumerate(non_fixed_positions):
+                        candidate.values[row, col] = non_fixed_values[i]
+
+            self.candidates.append(candidate)
+
+        self.update_fitness()
+        return 1
+
+    def _seed_from_partial(self, population, given):
+        """Método original para sudokus parcialmente preenchidos."""
         helper = Candidate()
         helper.values = [[[] for j in range(0, 9)] for i in range(0, 9)]
         for row in range(0, 9):

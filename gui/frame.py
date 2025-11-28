@@ -10,6 +10,7 @@ import os
 
 from core import solver as ga
 from core import pre_processing as pp
+from core.individual import Candidate
 from gui import frame_config
 
 class SudokuGUI(Frame):
@@ -189,6 +190,17 @@ class SudokuGUI(Frame):
         self.sudoku_pre_processed, _ = pp_controller.controller()
         self.update_canvas_2()
 
+    def check_sudoku_fitness(self, sudoku_array):
+        """Verifica se o sudoku está correto usando o método de aptidão do AG."""
+        candidate = Candidate()
+        candidate.values = np.copy(sudoku_array)
+        candidate.update_fitness()
+        
+        # Verificar se não há zeros e se a aptidão é 1.0
+        no_zeros = not np.any(candidate.values == 0)
+        perfect_fitness = abs(candidate.fitness - 1.0) < 1e-9
+        
+        return no_zeros and perfect_fitness
 
     def _update_ga_progress_callback(self, generation_num, best_candidate, total_individuals, best_fitness, start_time):
         # Verificar se o cancelamento foi solicitado
@@ -261,7 +273,8 @@ class SudokuGUI(Frame):
         end_pre_processing_time = time.time()
         pre_processing_time = end_pre_processing_time - start_pre_processing_time
 
-        if not np.any(self.sudoku_pre_processed == 0):
+        # Verificar se o pré-processamento resolveu completamente usando aptidão
+        if self.check_sudoku_fitness(self.sudoku_pre_processed):
             self.update_queue.put({'type': 'status_message', 'status_message': "SOLUÇÃO ENCONTRADA APENAS COM O PRÉ-PROCESSAMENTO"})
             self.update_queue.put({'type': 'enable_buttons', 'enable_buttons': True})
             self.update_queue.put({'type': 'time_update', 'elapsed_time': pre_processing_time}) 
@@ -309,10 +322,12 @@ class SudokuGUI(Frame):
 
         if use_preprocessing_result:
             board_to_solve = np.copy(self.sudoku_pre_processed)
+            # Passar o puzzle original para identificar células fixas
+            ga_sudoku.load(board_to_solve, self.original_sudoku_problem)
         else:
             board_to_solve = np.copy(self.original_sudoku_problem)
+            ga_sudoku.load(board_to_solve)
 
-        ga_sudoku.load(board_to_solve)
         start_time = time.time()
         
         solve_output = ga_sudoku.solve(progress_callback=lambda gen, best_cand, total_ind, best_fit: 

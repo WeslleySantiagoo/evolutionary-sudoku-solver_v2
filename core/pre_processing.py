@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 
 class PreProcessing(object):
@@ -246,6 +247,39 @@ class PreProcessing(object):
         return self.sudoku, numbers_filled_by_pp
 
 
+def fill_rows_with_possible_values(sudoku):
+    """
+    Preenche as células vazias de cada linha com valores possíveis,
+    sem repetir números na mesma linha, mas sem considerar colunas e blocos 3x3.
+    """
+    filled_sudoku = np.copy(sudoku)
+
+    for row in range(9):
+        # Obter números já presentes na linha
+        existing_numbers = set(filled_sudoku[row, :])
+        existing_numbers.discard(0)  # Remover o zero (células vazias)
+
+        # Números disponíveis para preencher (1 a 9 menos os já existentes)
+        available_numbers = list(set(range(1, 10)) - existing_numbers)
+
+        # Se não há números disponíveis, pular esta linha
+        if not available_numbers:
+            continue
+
+        # Embaralhar os números disponíveis para preenchimento aleatório
+        random.shuffle(available_numbers)
+
+        # Identificar posições vazias na linha
+        empty_positions = [col for col in range(9) if filled_sudoku[row, col] == 0]
+
+        # Preencher as posições vazias com os números disponíveis
+        for i, col in enumerate(empty_positions):
+            if i < len(available_numbers):
+                filled_sudoku[row, col] = available_numbers[i]
+
+    return filled_sudoku
+
+
 class Controller(object):
 
     def __init__(self):
@@ -258,4 +292,8 @@ class Controller(object):
     def controller(self):
         preprocessor = PreProcessing(self.sudoku)
         final_board, numbers_filled = preprocessor.preprocess()
+
+        # Aplicar preenchimento por linhas após o pré-processamento
+        final_board = fill_rows_with_possible_values(final_board)
+
         return final_board, numbers_filled

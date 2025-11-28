@@ -22,6 +22,20 @@ sys.path.append(SCRIPT_DIR)
 from core import solver as ga  # noqa: E402
 from core import pre_processing as pp  # noqa: E402
 from core import config  # noqa: E402
+from core.individual import Candidate  # noqa: E402
+
+
+def check_sudoku_fitness(sudoku_array):
+    """Verifica se o sudoku está correto usando o método de aptidão do AG."""
+    candidate = Candidate()
+    candidate.values = np.copy(sudoku_array)
+    candidate.update_fitness()
+    
+    # Verificar se não há zeros e se a aptidão é 1.0
+    no_zeros = not np.any(candidate.values == 0)
+    perfect_fitness = abs(candidate.fitness - 1.0) < 1e-9
+    
+    return no_zeros and perfect_fitness
 
 
 def load_sudoku(puzzle_name):
@@ -91,8 +105,8 @@ def solve_with_preprocessing(original_sudoku):
     print(f"Pré-processamento concluído em {pre_processing_time:.4f}s")
     print_sudoku(sudoku_pre_processed, "SUDOKU APÓS PRÉ-PROCESSAMENTO")
     
-    # Verificar se o pré-processamento resolveu completamente
-    if not np.any(sudoku_pre_processed == 0):
+    # Verificar se o pré-processamento resolveu completamente usando aptidão
+    if check_sudoku_fitness(sudoku_pre_processed):
         print("\n✓ SOLUÇÃO ENCONTRADA APENAS COM O PRÉ-PROCESSAMENTO!")
         return sudoku_pre_processed, True, pre_processing_time
     
@@ -105,7 +119,8 @@ def solve_with_preprocessing(original_sudoku):
     print("=" * 70)
     
     ga_sudoku = ga.Sudoku()
-    ga_sudoku.load(sudoku_pre_processed)
+    # Passar o puzzle original para identificar células fixas
+    ga_sudoku.load(sudoku_pre_processed, original_sudoku)
     
     start_time = time.time()
     solve_output = ga_sudoku.solve(

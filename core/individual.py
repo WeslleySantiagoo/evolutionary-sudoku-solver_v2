@@ -65,7 +65,13 @@ class Fixed(Candidate):
     def __init__(self, values):
         self.values = values
         self.fitness = None
+        # Armazenar quais células eram fixas originalmente (não zero)
+        self.original_fixed = (values != 0)
         return
+
+    def is_fixed(self, row, col):
+        """Verifica se uma célula era fixa no puzzle original."""
+        return self.original_fixed[row, col]
 
     def is_row_duplicate(self, row_idx, value):
         for column_idx in range(0, 9):

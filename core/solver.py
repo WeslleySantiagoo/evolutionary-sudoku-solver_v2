@@ -12,10 +12,25 @@ class Sudoku(object):
 
     def __init__(self):
         self.given = None
+        self.original_puzzle = None
         return
 
-    def load(self, p_values):
-        self.given = Fixed(p_values)
+    def load(self, p_values, original_values=None):
+        """
+        Carrega o puzzle.
+        
+        Args:
+            p_values: Valores do puzzle (pode estar pré-processado)
+            original_values: Valores originais do puzzle (antes do pré-processamento)
+                           Se None, assume que p_values é o original
+        """
+        if original_values is not None:
+            # Usar o puzzle original para determinar células fixas
+            self.given = Fixed(original_values)
+            # Mas usar os valores pré-processados no tabuleiro
+            self.given.values = p_values
+        else:
+            self.given = Fixed(p_values)
         return
 
     def solve(self, progress_callback=None):
@@ -35,7 +50,13 @@ class Sudoku(object):
         }
 
         no_given = self.given is None or self.given.values is None
-        if no_given or not self.given.no_duplicates():
+        if no_given:
+            return default_return_metrics
+        
+        # Se o sudoku está completamente preenchido (pós pré-processamento),
+        # não verificar duplicatas pois isso é esperado e será corrigido pelo AG
+        is_fully_filled = not np.any(self.given.values == 0)
+        if not is_fully_filled and not self.given.no_duplicates():
             return default_return_metrics
 
         self.population = Population()
