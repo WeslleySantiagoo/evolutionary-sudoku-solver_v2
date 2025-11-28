@@ -49,7 +49,8 @@ def test_preprocessing():
     print("3. Naked Pairs")
     print("4. Naked Triples (NOVO)")
     print("5. Naked Quads (NOVO)")
-    print("6. X-Wings")
+    print("6. Naked Quints (NOVO)")
+    print("7. X-Wings")
 
     print_sudoku(original, "PUZZLE ORIGINAL")
 

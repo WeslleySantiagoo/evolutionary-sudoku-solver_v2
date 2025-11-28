@@ -83,7 +83,104 @@ As técnicas são aplicadas na seguinte ordem, do mais simples ao mais complexo:
   3. Se a união tem exatamente 4 números, é um Naked Quad
   4. Remove esses 4 números de todas as outras células do grupo
 
-### 6. **X-Wings** (Padrões Lineares)
+### 6. **Naked Quints** (Quintetos Óbvios) ⭐ NOVO
+
+- **Complexidade:** Muito Alta
+- **O que faz:** Cinco células que juntas contêm apenas 5 candidatos diferentes
+- **Exemplo:**
+
+  ```
+  Célula A: {1, 3}
+  Célula B: {1, 5}
+  Célula C: {3, 5, 7}
+  Célula D: {3, 7, 9}
+  Célula E: {5, 9}
+
+  → Os números 1, 3, 5, 7 e 9 devem estar em A, B, C, D e E
+  → Remove 1, 3, 5, 7 e 9 de todas as outras células do grupo
+  ```
+
+- **Funcionamento:**
+
+  1. Procura grupos de 5 células com 2, 3, 4 ou 5 candidatos cada
+  2. Une os candidatos das 5 células
+  3. Se a união tem exatamente 5 números, é um Naked Quint
+  4. Remove esses 5 números das 4 células restantes do grupo
+
+- **Raridade:** Esta técnica é menos comum que as anteriores, pois encontrar 5 células
+  em um grupo de 9 que compartilham apenas 5 candidatos é raro. No entanto, quando
+  ocorre, pode eliminar muitos candidatos das 4 células restantes, sendo especialmente
+  útil em puzzles muito difíceis.
+
+### 7. **Naked Sextets** (Sextetos Óbvios) ⭐ NOVO
+
+- **Complexidade:** Extremamente Alta
+- **O que faz:** Seis células que juntas contêm apenas 6 candidatos diferentes
+- **Exemplo:**
+
+  ```
+  Célula A: {1, 2}
+  Célula B: {2, 4}
+  Célula C: {1, 4, 6}
+  Célula D: {4, 6, 8}
+  Célula E: {2, 8}
+  Célula F: {1, 6, 8}
+
+  → Os números 1, 2, 4, 6 e 8 devem estar em A, B, C, D, E e F
+  → Remove 1, 2, 4, 6 e 8 das 3 células restantes do grupo
+  ```
+
+- **Funcionamento:**
+
+  1. Procura grupos de 6 células com 2 a 6 candidatos cada
+  2. Une os candidatos das 6 células
+  3. Se a união tem exatamente 6 números, é um Naked Sextet
+  4. Remove esses 6 números das 3 células restantes do grupo
+
+- **Raridade:** Extremamente raro, mas útil em puzzles diabólicos.
+
+### 8. **Naked Septets** (Septetos Óbvios) ⭐ NOVO
+
+- **Complexidade:** Extremamente Alta
+- **O que faz:** Sete células que juntas contêm apenas 7 candidatos diferentes
+- **Exemplo:**
+
+  ```
+  7 células compartilhando os números {1, 2, 3, 4, 5, 6, 7}
+  → Remove esses 7 números das 2 células restantes do grupo
+  ```
+
+- **Funcionamento:**
+
+  1. Procura grupos de 7 células com 2 a 7 candidatos cada
+  2. Une os candidatos das 7 células
+  3. Se a união tem exatamente 7 números, é um Naked Septet
+  4. Remove esses 7 números das 2 células restantes do grupo
+
+- **Raridade:** Muito raro, mas pode ser crucial em puzzles extremamente difíceis.
+
+### 9. **Naked Octets** (Octetos Óbvios) ⭐ NOVO
+
+- **Complexidade:** Máxima
+- **O que faz:** Oito células que juntas contêm apenas 8 candidatos diferentes
+- **Exemplo:**
+
+  ```
+  8 células compartilhando os números {1, 2, 3, 4, 5, 6, 7, 8}
+  → Remove esses 8 números da única célula restante do grupo
+  ```
+
+- **Funcionamento:**
+
+  1. Procura grupos de 8 células com 2 a 8 candidatos cada
+  2. Une os candidatos das 8 células
+  3. Se a união tem exatamente 8 números, é um Naked Octet
+  4. Remove esses 8 números da única célula restante
+
+- **Raridade:** O mais raro de todos. Se encontrado, efetivamente resolve a última
+  célula do grupo deixando apenas 1 candidato (o 9º número).
+
+### 10. **X-Wings** (Padrões Lineares)
 
 - **Complexidade:** Alta
 - **O que faz:** Encontra padrões retangulares que permitem eliminar candidatos
@@ -123,15 +220,25 @@ As técnicas são aplicadas na seguinte ordem, do mais simples ao mais complexo:
     │              │              │
     └──────────────┼──────────────┘
                    │
-    ┌──────────────┼──────────────┐
-    │              │              │
-    ▼              ▼              ▼
-┌────────┐  ┌─────────────┐  ┌────────┐
-│ Naked  │  │   Naked     │  │X-Wings │
-│Triples │  │   Quads     │  │        │
-└───┬────┘  └──────┬──────┘  └────┬───┘
-    │              │              │
-    └──────────────┼──────────────┘
+    ┌──────────────┼──────────────┬──────────────┐
+    │              │              │              │
+    ▼              ▼              ▼              ▼
+┌────────┐  ┌─────────────┐  ┌─────────┐  ┌─────────┐
+│ Naked  │  │   Naked     │  │ Naked   │  │ Naked   │
+│Triples │  │   Quads     │  │ Quints  │  │ Sextets │
+└───┬────┘  └──────┬──────┘  └────┬────┘  └────┬────┘
+    │              │              │             │
+    └──────────────┼──────────────┴─────────────┘
+                   │
+    ┌──────────────┼──────────────┬──────────────┐
+    │              │              │              │
+    ▼              ▼              ▼              ▼
+┌────────┐  ┌─────────────┐  ┌────────┐         │
+│ Naked  │  │   Naked     │  │X-Wings │         │
+│Septets │  │   Octets    │  │        │         │
+└───┬────┘  └──────┬──────┘  └────┬───┘         │
+    │              │              │              │
+    └──────────────┴──────────────┴──────────────┘
                    │
                    ▼
             ┌──────────────┐
@@ -150,18 +257,20 @@ As técnicas são aplicadas na seguinte ordem, do mais simples ao mais complexo:
 A ordem das técnicas foi escolhida para maximizar a eficiência:
 
 1. **Técnicas Simples Primeiro:** Naked Single e Hidden Single são rápidas e frequentemente eficazes
-2. **Hierarquia Natural:** Pairs → Triples → Quads segue uma progressão lógica de complexidade
-3. **Complexas por Último:** X-Wings é computacionalmente mais caro, então é aplicado depois
+2. **Hierarquia Natural:** Pairs → Triples → Quads → Quints → Sextets → Septets → Octets segue uma progressão lógica de complexidade
+3. **Complexidade Crescente:** Quanto maior o conjunto, mais raro e computacionalmente caro
+4. **Complexas por Último:** X-Wings é computacionalmente mais caro, então é aplicado depois
 
 Esta estratégia minimiza o número de iterações necessárias e reduz o tempo de pré-processamento.
 
 ## Resultados
 
-Com a implementação completa das 6 técnicas, o pré-processamento é capaz de:
+Com a implementação completa das 10 técnicas, o pré-processamento é capaz de:
 
 - Resolver puzzles fáceis e médios **completamente** (sem necessidade do AG)
 - Reduzir significativamente o espaço de busca para puzzles difíceis
 - Preencher células com **100% de certeza lógica**
+- Lidar com puzzles diabólicos através de técnicas avançadas (Sextets, Septets, Octets)
 
 ## Implementação Técnica
 
