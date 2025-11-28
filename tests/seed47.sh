@@ -1,0 +1,2 @@
+#!/bin/bash
+/home/weslley-santiago/Documentos/UFRPE/evolutionary-sudoku-solver_v2/.venv/bin/python /home/weslley-santiago/Documentos/UFRPE/evolutionary-sudoku-solver_v2/solver_without_window.py s16 --with-pp 47
