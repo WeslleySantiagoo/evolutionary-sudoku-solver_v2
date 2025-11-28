@@ -106,7 +106,7 @@ def solve_with_preprocessing(original_sudoku):
     
     ga_sudoku = ga.Sudoku()
     ga_sudoku.load(sudoku_pre_processed)
-    
+
     start_time = time.time()
     solve_output = ga_sudoku.solve(
         progress_callback=lambda gen, best_cand, total_ind, best_fit:
