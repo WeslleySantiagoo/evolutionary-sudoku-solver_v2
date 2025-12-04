@@ -199,8 +199,7 @@ def main():
     puzzle_name = sys.argv[1]
     use_preprocessing = True
     custom_seed = None
-
-    # Verificar opções
+    # Verificar opções adicionais
     if len(sys.argv) > 2:
         if sys.argv[2] == "--without-pp":
             use_preprocessing = False
@@ -217,17 +216,24 @@ def main():
     # Verificar se há um terceiro parâmetro (seed)
     if len(sys.argv) > 3:
         try:
-            custom_seed = int(sys.argv[3])
+            if sys.argv[3] == "random":
+                custom_seed = random.randint(0, 2**32 - 1)
+            else:
+                custom_seed = int(sys.argv[3])
         except ValueError:
             print(f"Seed inválida: {sys.argv[3]}. Deve ser um número inteiro.")
             sys.exit(1)
 
     # Aplicar seed global
-    seed_to_use = custom_seed if custom_seed is not None else config.RANDOM_SEED
+    if custom_seed is None:
+        seed_to_use = config.RANDOM_SEED
+    else:
+        seed_to_use = custom_seed
+
     if seed_to_use is not None:
         random.seed(seed_to_use)
         np.random.seed(seed_to_use)
-        print(f"Seed aleatória configurada: {seed_to_use}")
+        print(f"Seed aleatória configurada: {seed_to_use}\n")
 
     # Carregar puzzle
     print("=" * 70)
