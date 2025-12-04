@@ -213,18 +213,8 @@ def main():
                 print(f"Opção desconhecida: {sys.argv[2]}")
                 sys.exit(1)
 
-    # Verificar se há um terceiro parâmetro (seed)
-    if len(sys.argv) > 3:
-        try:
-            if sys.argv[3] == "random":
-                custom_seed = random.randint(0, 2**32 - 1)
-            else:
-                custom_seed = int(sys.argv[3])
-        except ValueError:
-            print(f"Seed inválida: {sys.argv[3]}. Deve ser um número inteiro.")
-            sys.exit(1)
-
-    # Aplicar seed global
+    # Aplicar seed global ANTES de usar random para "random"
+    # Determinar a seed a usar
     if custom_seed is None:
         seed_to_use = config.RANDOM_SEED
     else:
@@ -234,6 +224,27 @@ def main():
         random.seed(seed_to_use)
         np.random.seed(seed_to_use)
         print(f"Seed aleatória configurada: {seed_to_use}\n")
+
+    # Verificar se há um terceiro parâmetro (seed)
+    if len(sys.argv) > 3:
+        try:
+            if sys.argv[3] == "random":
+                # Agora random está seedado, então isso é determinístico
+                custom_seed = random.randint(0, 2**32 - 1)
+                # Re-aplicar com a nova seed gerada
+                random.seed(custom_seed)
+                np.random.seed(custom_seed)
+                print(f"Seed aleatória gerada e configurada: {custom_seed}\n")
+            else:
+                custom_seed = int(sys.argv[3])
+                # Re-aplicar se necessário
+                if custom_seed != seed_to_use:
+                    random.seed(custom_seed)
+                    np.random.seed(custom_seed)
+                    print(f"Seed aleatória reconfigurada: {custom_seed}\n")
+        except ValueError:
+            print(f"Seed inválida: {sys.argv[3]}. Deve ser um número inteiro.")
+            sys.exit(1)
 
     # Carregar puzzle
     print("=" * 70)
