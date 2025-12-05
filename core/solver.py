@@ -5,10 +5,11 @@ import operator
 from . import config
 from .individual import Candidate, Fixed
 from .population import Population
-from .genetic_operators import Tournament, CXCrossover, mutate
+from .genetic_operators import Tournament, CXCrossover, mutate, mutate_scramble, mutate_constraint_aware
 
 
 class Sudoku(object):
+
 
     def __init__(self):
         self.given = None
@@ -119,7 +120,7 @@ class Sudoku(object):
                 if child1 is not None and child1.values is not None:
                     child1.update_fitness()
                     old_fitness_c1 = child1.fitness if child1.fitness is not None else -1.0
-                    mutation_performed_c1 = mutate(child1, mutation_rate, self.given)
+                    mutation_performed_c1 = mutate_constraint_aware(child1, mutation_rate, self.given)
                     if mutation_performed_c1:
                         child1.update_fitness()
                     offspring_population.append(child1)
@@ -130,7 +131,7 @@ class Sudoku(object):
                 if child2 is not None and child2.values is not None:
                     child2.update_fitness()
                     old_fitness_c2 = child2.fitness if child2.fitness is not None else -1.0
-                    mutation_performed_c2 = mutate(child2, mutation_rate, self.given)
+                    mutation_performed_c2 = mutate_constraint_aware(child2, mutation_rate, self.given)
                     if mutation_performed_c2:
                         child2.update_fitness()
                     offspring_population.append(child2)

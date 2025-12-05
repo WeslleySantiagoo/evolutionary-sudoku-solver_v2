@@ -66,11 +66,12 @@ def progress_callback(generation_num, best_candidate, total_individuals, best_fi
     elapsed = time.time() - start_time
 
     # Imprimir uma nova linha para cada geração
-    print(f"Geração: {generation_num + 1:4d} | "
-          f"Total Gerações: {generation_num + 1:4d} | "
-          f"Indivíduos: {total_individuals:8d} | "
-          f"Melhor Aptidão: {best_fitness:.6f} | "
-          f"Tempo: {elapsed:.2f}s")
+    if (generation_num - 1) % 1 == 0 or generation_num == 0:
+        print(f"Geração: {generation_num + 1:4d} | "
+            f"Total Gerações: {generation_num + 1:4d} | "
+            f"Indivíduos: {total_individuals:8d} | "
+            f"Melhor Aptidão: {best_fitness:.6f} | "
+            f"Tempo: {elapsed:.2f}s")
 
     return True
 

@@ -60,6 +60,8 @@ def parse_solver_output(output_str):
         'solved': False,
         'total_time': 0.0,
         'generation': 0,
+        'generation_found': None,
+        'best_fitness': None,
         'solution_found': False,
         'final_solution': None
     }
@@ -82,7 +84,7 @@ def parse_solver_output(output_str):
             except (ValueError, IndexError):
                 pass
     
-    # Procurar por status
+    # Procurar por status e geração
     for line in lines:
         if 'Puzzle resolvido com sucesso' in line:
             info['solved'] = True
@@ -90,6 +92,28 @@ def parse_solver_output(output_str):
         
         if 'Não foi possível resolver' in line:
             info['solution_found'] = True
+        
+        # Procurar pela geração em que a solução foi encontrada
+        if 'Geração:' in line and 'RESULTADO' not in line:
+            try:
+                # Formato esperado: "Geração: 123" ou similar
+                parts = line.split('Geração:')
+                if len(parts) > 1:
+                    gen_str = parts[1].strip().split()[0]
+                    info['generation_found'] = int(gen_str)
+            except (ValueError, IndexError):
+                pass
+        
+        # Procurar pela aptidão
+        if 'Aptidão:' in line:
+            try:
+                # Formato esperado: "Aptidão: 0.999999" ou similar
+                parts = line.split('Aptidão:')
+                if len(parts) > 1:
+                    fitness_str = parts[1].strip().split()[0]
+                    info['best_fitness'] = float(fitness_str)
+            except (ValueError, IndexError):
+                pass
     
     # Procurar pelo sudoku final na saída (se disponível)
     try:
@@ -176,7 +200,7 @@ def run_solver_attempt(puzzle_name, preprocessing, seed=None, verbose=False):
             cmd,
             capture_output=True,
             text=True,
-            timeout=1200,  # timeout de 20 minutos
+            timeout=1800,  # timeout de 30 minutos
             cwd=ROOT_DIR
         )
         
@@ -202,12 +226,12 @@ def run_solver_attempt(puzzle_name, preprocessing, seed=None, verbose=False):
     except subprocess.TimeoutExpired:
         return {
             'return_code': -1,
-            'execution_time': 1200.0,
+            'execution_time': 1800.0,
             'seed': seed,
             'solved': False,
             'solution_found': False,
             'timeout': True,
-            'output': 'TIMEOUT: Execução excedeu 20 minutos'
+            'output': 'TIMEOUT: Execução excedeu 30 minutos'
         }
     except Exception as e:
         return {
@@ -250,6 +274,9 @@ def run_batch_experiments(puzzle_name, num_attempts, preprocessing, output_csv=N
     
     all_results = []
     attempt_number = 1
+    
+    # Marcar tempo de início do batch
+    batch_start_time = time.time()
     
     print(f"\n{'='*70}")
     print(f"BATCH EXPERIMENTS - {puzzle_name}")
@@ -306,11 +333,14 @@ def run_batch_experiments(puzzle_name, num_attempts, preprocessing, output_csv=N
         
         print()
     
+    # Calcular tempo total de execução do batch
+    batch_total_time = time.time() - batch_start_time
+    
     # Salvar resultados em CSV
     save_results_to_csv(all_results, puzzle_name, preprocessing, output_csv)
     
     # Imprimir estatísticas
-    print_statistics(all_results, puzzle_name, preprocessing)
+    print_statistics(all_results, puzzle_name, preprocessing, batch_total_time)
     
     return all_results, output_csv
 
@@ -331,6 +361,8 @@ def save_results_to_csv(results, puzzle_name, preprocessing, output_file):
         'preprocessing',
         'seed',
         'solved',
+        'generation_found',
+        'best_fitness',
         'execution_time_seconds',
         'return_code',
         'final_solution',
@@ -342,12 +374,18 @@ def save_results_to_csv(results, puzzle_name, preprocessing, output_file):
         writer.writeheader()
         
         for idx, result in enumerate(results, 1):
+            best_fitness = result.get('best_fitness', 'N/A')
+            if best_fitness != 'N/A' and best_fitness is not None:
+                best_fitness = f"{best_fitness:.6f}"
+            
             writer.writerow({
                 'attempt_number': idx,
                 'puzzle_name': puzzle_name,
                 'preprocessing': 'SIM' if preprocessing else 'NÃO',
                 'seed': result.get('seed', 'N/A'),
                 'solved': 'SIM' if result.get('solved') else 'NÃO',
+                'generation_found': result.get('generation_found', 'N/A'),
+                'best_fitness': best_fitness,
                 'execution_time_seconds': f"{result.get('execution_time', 0):.4f}",
                 'return_code': result.get('return_code', 'N/A'),
                 'final_solution': result.get('final_solution', 'N/A'),
@@ -357,7 +395,7 @@ def save_results_to_csv(results, puzzle_name, preprocessing, output_file):
     print(f"✓ Resultados salvos em: {output_file}")
 
 
-def print_statistics(results, puzzle_name, preprocessing):
+def print_statistics(results, puzzle_name, preprocessing, total_time=None):
     """Imprime estatísticas dos experimentos."""
     
     if not results:
@@ -382,6 +420,8 @@ def print_statistics(results, puzzle_name, preprocessing):
     print(f"Tempo médio: {avg_time:.4f}s")
     print(f"Tempo mínimo: {min_time:.4f}s")
     print(f"Tempo máximo: {max_time:.4f}s")
+    if total_time is not None:
+        print(f"Tempo total do script: {total_time:.4f}s ({total_time / 60:.2f} minutos)")
     print(f"{'='*70}\n")
 
 

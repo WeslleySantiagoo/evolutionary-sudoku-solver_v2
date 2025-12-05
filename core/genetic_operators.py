@@ -118,6 +118,7 @@ class CXCrossover(object):
 
 
 def mutate(candidate, mutation_rate, given):
+    """Swap mutation - troca dois valores mutáveis em uma linha"""
     random.uniform(0, 1.1)
 
     success = False
@@ -135,6 +136,97 @@ def mutate(candidate, mutation_rate, given):
                 temp = candidate.values[row1][to_column]
                 candidate.values[row1][to_column] = candidate.values[row1][from_column]
                 candidate.values[row1][from_column] = temp
+                success = True
+
+    return success
+
+
+def mutate_scramble(candidate, mutation_rate, given):
+    """Scramble mutation - embaralha todos os valores mutáveis em uma linha"""
+    success = False
+    if random.random() < mutation_rate:
+        attempts = 0
+        while not success and attempts < 50:
+            attempts += 1
+            row1 = random.randint(0, 8)
+
+            mutable_columns = [col for col in range(9) if given.values[row1][col] == 0]
+
+            if len(mutable_columns) >= 2:
+                # Extrai os valores das posições mutáveis
+                mutable_values = [candidate.values[row1][col] for col in mutable_columns]
+
+                # Embaralha os valores
+                random.shuffle(mutable_values)
+
+                # Reinsere os valores embaralhados nas posições mutáveis
+                for i, col in enumerate(mutable_columns):
+                    candidate.values[row1][col] = mutable_values[i]
+
+                success = True
+
+    return success
+
+
+def mutate_constraint_aware(candidate, mutation_rate, given):
+    """
+    Constraint-aware swap mutation - troca baseada em restrições do Sudoku.
+    
+    Escolhe uma casa mutável aleatória, identifica os números possíveis
+    baseado nas restrições de linha, coluna e bloco 3x3, e troca com
+    um valor válido na mesma linha.
+    """
+    success = False
+    if random.random() < mutation_rate:
+        attempts = 0
+        while not success and attempts < 50:
+            attempts += 1
+            
+            # Escolhe uma casa aleatória (linha e coluna)
+            row = random.randint(0, 8)
+            col = random.randint(0, 8)
+            
+            # Verifica se a casa é mutável
+            if given.values[row][col] != 0:
+                continue
+            
+            # Determina o bloco 3x3 da casa escolhida
+            block_row = (row // 3) * 3
+            block_col = (col // 3) * 3
+            
+            # Coleta números fixos na linha, coluna e bloco
+            fixed_in_row = set(given.values[row][c] for c in range(9) if given.values[row][c] != 0)
+            fixed_in_col = set(given.values[r][col] for r in range(9) if given.values[r][col] != 0)
+            fixed_in_block = set(
+                given.values[block_row + i][block_col + j]
+                for i in range(3) for j in range(3)
+                if given.values[block_row + i][block_col + j] != 0
+            )
+            
+            # União de todos os números fixos que afetam esta casa
+            fixed_numbers = fixed_in_row | fixed_in_col | fixed_in_block
+            
+            # Possíveis números para esta casa (1-9 exceto os fixos)
+            possible_numbers = [n for n in range(1, 10) if n not in fixed_numbers]
+            
+            if not possible_numbers:
+                continue
+            
+            # Escolhe um número válido aleatório
+            target_value = random.choice(possible_numbers)
+            
+            # Procura na mesma linha por uma coluna mutável que contenha esse valor
+            swap_columns = [
+                c for c in range(9)
+                if given.values[row][c] == 0 and candidate.values[row][c] == target_value and c != col
+            ]
+            
+            if swap_columns:
+                # Realiza a troca
+                swap_col = random.choice(swap_columns)
+                temp = candidate.values[row][col]
+                candidate.values[row][col] = candidate.values[row][swap_col]
+                candidate.values[row][swap_col] = temp
                 success = True
 
     return success
